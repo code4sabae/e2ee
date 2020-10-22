@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>E2EE 非通信メッセージング補助アプリ</title>
+    <script type="module">
+    //import { ECDH } from "https://code4sabae.github.io/js/ECDH.js";
+    import { ECDH } from "../code4sabae-js/ECDH.js";
+    import { hex } from "https://code4sabae.github.io/js/hex.js";
+
+    window.onload = () => {
+      generatebutton.onclick = async () => {
+        const keypair = await ECDH.generateKeyPair();
+        ecdhpublickey.value = hex.fromBin(await ECDH.getPublicKey(keypair));
+        ecdhprivatekey.value = JSON.stringify(await ECDH.getPrivateKey(keypair));
+      };
+      generatebutton2.onclick = async () => {
+        const keypair = await ECDH.importKeyPair(hex.toBin(ecdhpublickey.value), JSON.parse(ecdhprivatekey.value));
+        const secretkey = await ECDH.deriveSecretKey(keypair, hex.toBin(ecdhpublickey2.value));
+        ecdhsecretkey.value = hex.fromBin(await ECDH.exportSecretKey(secretkey)); // await exportCryptoKey(secretkey);
+      };
+      encryptbutton.onclick = async () => {
+        const secretkey = await ECDH.importSecretKey(hex.toBin(ecdhsecretkey.value));
+        const ciphered = await ECDH.encryptText(secretkey, ecdhmessage.value);
+        ecdhciphertext.value = hex.fromBin(ciphered.iv) + "_" + hex.fromBin(ciphered.ciphertext);
+      };
+      decryptbutton.onclick = async () => {
+        const secretkey = await ECDH.importSecretKey(hex.toBin(ecdhsecretkey.value));
+        const ivci = ecdhciphertext.value.split("_");
+        const iv = hex.toBin(ivci[0]);
+        const ciphertext = hex.toBin(ivci[1]);
+        ecdhmessage.value = await ECDH.decryptText(secretkey, iv, ciphertext);
+      };
+    };
+    </script>
+    <style>
+    body {
+      font-family: sans-serif;
+    }
+    input[type="text"] {
+      width: 80vw;
+    }
+    .message {
+      width: 30vw;
+      height: 5em;
+    }
+    .description {
+      font-size: 85%;
+    }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>E2EE 非通信メッセージング補助アプリ</h1>
+        <section>
+          <div class=description>ECDH P-521でキーペアの生成と受け取った公開鍵から共通鍵の生成をし、AES-256-GCMで暗号化復号化します。<br>アプリ読み込み後、サーバーとの通信はしません。<a href=https://github.com/code4sabae/e2ee/>ソースファイル</a>でご確認ください。</div>
+          <br>
+          <input id="generatebutton" type="button" value="1. キーペア（公開鍵と秘密鍵）をつくる"><br>
+          <br>
+          秘密鍵（誰にも見せてはいけない鍵）<br>
+          <input type="text" id="ecdhprivatekey"><br>
+          公開鍵（相手に渡す鍵、公開してもOK！）<br>
+          <input type="text" id="ecdhpublickey"><br>
+          <br>
+          2. 相手の公開鍵（通信する相手から公開鍵をもらって、書く）<br>
+          <input type="text" id="ecdhpublickey2"><br>
+          <br>
+          <input id="generatebutton2" type="button" value="3. 通信用の共通鍵をつくる"><br>
+          <br>
+          共通鍵（ネットワークには流れていないけど、通信相手と同じ鍵）<br>
+          <input type="text" id="ecdhsecretkey"><br>
+          <br>
+          <hr>
+          <table>
+            <tr><th>メッセージ</th><th></th><th>暗号</th></tr>
+            <tr>
+              <td><textarea class="message" id="ecdhmessage"></textarea></td>
+              <td>
+                <input id="encryptbutton" type="button" value="暗号化→"><br>
+                <br>
+                <input id="decryptbutton" type="button" value="←復号化"><br>
+              </td>
+              <td><textarea class="message" id="ecdhciphertext"></textarea></td>
+            </tr>
+          </table>
+          <br>
+        </section>
+        <hr>
+        <div id="credit">
+          App: CC BY <a href=https://fukuno.jig.jp/3010>福野泰介の一日一創</a><br>
+          Algorithm: ECDH P-521, AES-256-GCM (<a href=https://code4sabae.github.io/ecdh-test/>ecdh-test</a>)<br>
+          API: <a href=https://developer.mozilla.org/ja/docs/Web/API/Web_Crypto_API>Web Crypto API</a><br>
+        </div>
+    </main>
+  </body>
+</html>
