@@ -2,7 +2,8 @@
   <head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
     <title>E2EEメッセージングヘルパー - Pure JavaScript ver.</title>
     <script type="module">
-    import { ECDH } from "https://taisukef.github.io/ECDH-es/ECDH.js";
+    //import { ECDH, ZeroableUint8Array } from "../../util/ECDH-es/ECDH.js";
+    import { ECDH, ZeroableUint8Array } from "https://taisukef.github.io/ECDH-es/ECDH.js";
     import { hex } from "https://code4sabae.github.io/js/hex.js";
     import { Buffer } from "https://taisukef.github.io/buffer/Buffer.js";
     import { AESGCM } from "https://taisukef.github.io/AES-GCM-es/AESGCM.js";
@@ -14,12 +15,12 @@
 
       generatebutton.onclick = async () => {
         const keypair = ECDH.generateKeys(curve);
-        ecdhpublickey.value = keypair.publicKey.buffer.toString("hex");
-        ecdhprivatekey.value = keypair.privateKey.buffer.toString("hex");
+        ecdhpublickey.value = keypair.publicKey.buffer.toHexString();
+        ecdhprivatekey.value = keypair.privateKey.buffer.toHexString();
       };
       generatebutton2.onclick = async () => {
-      	const privateKey = ECDH.PrivateKey.fromBuffer(curve, Buffer.from(ecdhprivatekey.value, "hex"));
-        const peerPublicKey = ECDH.PublicKey.fromBuffer(curve, Buffer.from(ecdhpublickey2.value, "hex"));
+      	const privateKey = ECDH.PrivateKey.fromBuffer(curve, ZeroableUint8Array.fromHexString(ecdhprivatekey.value, ecdhprivatekey.value.length / 2));
+        const peerPublicKey = ECDH.PublicKey.fromBuffer(curve, ZeroableUint8Array.fromHexString(ecdhpublickey2.value, ecdhpublickey2.value.length / 2));
         const secretKey = privateKey.deriveSharedSecret(peerPublicKey);
         ecdhsecretkey.value = hex.fromBin(secretKey);
         iv = AESGCM.createIV();
