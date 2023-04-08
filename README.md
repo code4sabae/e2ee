@@ -1,6 +1,6 @@
 # e2ee
 
-- [E2EE - Ed25519 version](https://code4sabae.github.io/e2ee/)
+- [E2EE - Ed25519 version](https://code4fukui.github.io/e2ee/)
 
 ## dependencies
 
