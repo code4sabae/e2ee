@@ -1,32 +1,38 @@
 <!DOCTYPE html><html lang="ja">
   <head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
-    <title>E2EEメッセージングヘルパー</title>
+    <title>E2EEメッセージングヘルパー Ed25519 version</title>
     <script type="module">
-    import { ECDH } from "https://code4sabae.github.io/js/ECDH.js";
-    import { hex } from "https://code4sabae.github.io/js/hex.js";
-
-    window.onload = () => {
+    import * as sec from "https://code4fukui.github.io/sec.js/sec.js";
+    import { Base16 } from "https://code4fukui.github.io/Base16/Base16.js";
+    
+    onload = () => {
       generatebutton.onclick = async () => {
-        const keypair = await ECDH.generateKeyPair();
-        ecdhpublickey.value = hex.fromBin(await ECDH.getPublicKey(keypair));
-        ecdhprivatekey.value = JSON.stringify(await ECDH.getPrivateKey(keypair));
+        const prikey = sec.prikey();
+        const pubkey = sec.pubkey(prikey);
+        publickey.value = Base16.encode(pubkey);
+        privatekey.value = Base16.encode(prikey);
       };
       generatebutton2.onclick = async () => {
-        const keypair = await ECDH.importKeyPair(hex.toBin(ecdhpublickey.value), JSON.parse(ecdhprivatekey.value));
-        const secretkey = await ECDH.deriveSecretKey(keypair, hex.toBin(ecdhpublickey2.value));
-        ecdhsecretkey.value = hex.fromBin(await ECDH.exportSecretKey(secretkey)); // await exportCryptoKey(secretkey);
+        const pubkey2 = Base16.decode(publickey2.value);
+        const prikey = Base16.decode(privatekey.value);
+        const shkey = sec.sharekey(prikey, pubkey2);
+        sharekey.value = Base16.encode(shkey);
       };
       encryptbutton.onclick = async () => {
-        const secretkey = await ECDH.importSecretKey(hex.toBin(ecdhsecretkey.value));
-        const ciphered = await ECDH.encryptText(secretkey, ecdhmessage.value);
-        ecdhciphertext.value = hex.fromBin(ciphered.iv) + "_" + hex.fromBin(ciphered.ciphertext);
+        const data = new TextEncoder().encode(messagetext.value);
+        const key = Base16.decode(sharekey.value);
+        const cipher = sec.encrypt(key, data);
+        ciphertext.value = Base16.encode(cipher);
       };
       decryptbutton.onclick = async () => {
-        const secretkey = await ECDH.importSecretKey(hex.toBin(ecdhsecretkey.value));
-        const ivci = ecdhciphertext.value.split("_");
-        const iv = hex.toBin(ivci[0]);
-        const ciphertext = hex.toBin(ivci[1]);
-        ecdhmessage.value = await ECDH.decryptText(secretkey, iv, ciphertext);
+        const key = Base16.decode(sharekey.value);
+        const cipher = Base16.decode(ciphertext.value);
+        const data = sec.decrypt(key, cipher);
+        if (data) {
+          messagetext.value = new TextDecoder().decode(data);
+        } else {
+          messagetext.value = "復号失敗";
+        }
       };
     };
     </script>
@@ -50,43 +56,42 @@
     <main>
       <h1>E2EEメッセージングヘルパー</h1>
         <section>
-          <div class=description>既存の信用できない通信路を使った信用できる通信を実現する補助ツールです。<br>ECDH P-521でキーペアの生成と受け取った公開鍵から共通鍵の生成をし、AES-256-GCMで暗号化復号化します。<br>本ページの読み込み後、サーバーとの通信はしません。<a href=https://github.com/code4sabae/e2ee/>ソースファイル</a>でご確認ください。</div>
+          <div class=description>既存の信用できない通信路を使った信用できる通信を実現する補助ツールです。<br><a href=https://ja.wikipedia.org/wiki/%E3%82%A8%E3%83%89%E3%83%AF%E3%83%BC%E3%82%BA%E6%9B%B2%E7%B7%9A%E3%83%87%E3%82%B8%E3%82%BF%E3%83%AB%E7%BD%B2%E5%90%8D%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0>Ed25519</a>/<a href=https://ja.wikipedia.org/wiki/Curve25519>X25519</a>でキーペアの生成と受け取った公開鍵から共通鍵の生成をし、共通鍵暗号<a href=https://ja.wikipedia.org/wiki/Galois/Counter_Mode>AES-GCM</a>で暗号化復号化します。<br>本ページの読み込み後、サーバーとの通信はしません。<a href=https://github.com/code4sabae/e2ee/blob/main/ed25519.html>ソースファイル</a>でご確認ください。</div>
           <br>
           <input id="generatebutton" type="button" value="1. キーペア（公開鍵と秘密鍵）をつくる"><br>
           <br>
           秘密鍵（誰にも見せてはいけない鍵）<br>
-          <input type="text" id="ecdhprivatekey"><br>
+          <input type="text" id="privatekey"><br>
           公開鍵（相手に渡す鍵、公開してもOK！）<br>
-          <input type="text" id="ecdhpublickey"><br>
+          <input type="text" id="publickey"><br>
           <br>
           2. 相手の公開鍵（通信する相手から公開鍵をもらって、書く）<br>
-          <input type="text" id="ecdhpublickey2"><br>
+          <input type="text" id="publickey2"><br>
           <br>
           <input id="generatebutton2" type="button" value="3. 通信用の共通鍵をつくる"><br>
           <br>
           共通鍵（ネットワークには流れていないけど、通信相手と同じ鍵）<br>
-          <input type="text" id="ecdhsecretkey"><br>
+          <input type="text" id="sharekey"><br>
           <br>
           <hr>
           <table>
             <tr><th>メッセージ</th><th></th><th>暗号</th></tr>
             <tr>
-              <td><textarea class="message" id="ecdhmessage"></textarea></td>
+              <td><textarea class="message" id="messagetext"></textarea></td>
               <td>
                 <input id="encryptbutton" type="button" value="暗号化→"><br>
                 <br>
                 <input id="decryptbutton" type="button" value="←復号化"><br>
               </td>
-              <td><textarea class="message" id="ecdhciphertext"></textarea></td>
+              <td><textarea class="message" id="ciphertext"></textarea></td>
             </tr>
           </table>
           <br>
         </section>
         <hr>
         <div id="credit">
-          App: CC BY <a href=https://fukuno.jig.jp/3010>福野泰介の一日一創</a><br>
-          Algorithm: ECDH P-521, AES-256-GCM (<a href=https://code4sabae.github.io/ecdh-test/>ecdh-test</a>)<br>
-          API: <a href=https://developer.mozilla.org/ja/docs/Web/API/Web_Crypto_API>Web Crypto API</a><br>
+          Lib: <a href=https://github.com/code4fukui/sec.js>sec.js</a>(Ed25519, X25519, Ed25519-to-X25519, AES-256-GCM, <a href=https://developer.mozilla.org/ja/docs/Web/API/Web_Crypto_API>Web Crypto API</a>)<br>
+          Blog: <a href=https://fukuno.jig.jp/3908>E2EE サイバーセキュリティ at 神山まるごと高専</a><br>
         </div>
     </main>
   </body>

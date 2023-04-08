@@ -1,10 +1,8 @@
 # e2ee
 
-- [with Web Crypto API ver.](https://code4sabae.github.io/e2ee/)
-- [Pure JavaScript ver.](https://code4sabae.github.io/e2ee/purejs.html)
+- [E2EE - Ed25519 version](https://code4sabae.github.io/e2ee/)
 
 ## dependencies
 
-- [ECDH-es](https://github.com/taisukef/ECDH-es/)
-- [AESGCM-es](https://github.com/taisukef/AES-GCM-es/)
-- [hex](https://github.com/code4sabae/js/hex.js)
+- [sec.js](https://github.com/code4fukui/sec.js)
+- [Base16](https://github.com/code4fukui/Base16)
